@@ -1,0 +1,755 @@
+{
+  "manifest_version": "1.0.0",
+  "min_shell_version": "1.0.0",
+  "runtime_contract": {
+    "services": {
+      "nav": [
+        "go(targetScreenId: string, params?: any)",
+        "back()",
+        "resolve(eventName: string)"
+      ],
+      "api": ["call(route: string, payload?: any): Promise<any>"],
+      "device": ["pickImageBase64(): Promise<string>"],
+      "emit": ["emit(eventName: string, payload?: any): void"]
+    },
+    "screen_component_props": [
+      "manifest",
+      "screen",
+      "nav",
+      "api",
+      "device",
+      "emit"
+    ],
+    "web_compat": true
+  },
+  "app": {
+    "app_id": "count-my-calories",
+    "name": "Count My Calories",
+    "theme": {
+      "brand_name": "Count My Calories",
+      "primary_color": "#2F80ED"
+    }
+  },
+  "screens": [
+    {
+      "screen_id": "home",
+      "title": "Dashboard",
+      "props": {
+        "layout": "cards",
+        "header": "Count My Calories",
+        "subheader": "Log meals, view reports, and get advice.",
+        "cards": [
+          {
+            "id": "log_meal",
+            "label": "Log a Meal (Photo)",
+            "event": "on_card_click:log_meal"
+          },
+          {
+            "id": "history",
+            "label": "Meal History",
+            "event": "on_card_click:history"
+          },
+          {
+            "id": "weekly_report",
+            "label": "Weekly Report",
+            "event": "on_card_click:weekly_report"
+          },
+          {
+            "id": "advice",
+            "label": "Nutrition Advice",
+            "event": "on_card_click:advice"
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_card_click:log_meal", "type": "nav" },
+        { "name": "on_card_click:history", "type": "nav" },
+        { "name": "on_card_click:weekly_report", "type": "nav" },
+        { "name": "on_card_click:advice", "type": "nav" }
+      ],
+      "actions": [],
+      "agent_id": null,
+      "schema_id": null,
+      "codegen_id": "codegen_home",
+      "navigation": {
+        "on_card_click:log_meal": "meal_capture",
+        "on_card_click:history": "meal_history",
+        "on_card_click:weekly_report": "weekly_report",
+        "on_card_click:advice": "nutrition_advice"
+      }
+    },
+    {
+      "screen_id": "meal_capture",
+      "title": "Log Meal",
+      "props": {
+        "layout": "camera",
+        "header": "Log a Meal",
+        "instructions": [
+          "Tap 'Pick Meal Photo' to choose an image.",
+          "Optionally pick meal type and time.",
+          "Tap 'Analyze' to estimate calories and macros."
+        ],
+        "fields": [
+          {
+            "name": "meal_type",
+            "type": "select",
+            "required": true,
+            "options": ["breakfast", "lunch", "dinner", "snack"]
+          },
+          { "name": "consumed_at", "type": "datetime", "required": true }
+        ],
+        "actions": [
+          {
+            "id": "pick_photo",
+            "label": "Pick Meal Photo",
+            "event": "on_pick_photo"
+          },
+          {
+            "id": "analyze",
+            "label": "Analyze",
+            "event": "on_analyze",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_pick_photo", "type": "action" },
+        { "name": "on_analyze", "type": "action" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "pick_photo",
+          "label": "Pick Meal Photo",
+          "event": "on_pick_photo",
+          "calls_agent": false
+        },
+        {
+          "id": "analyze",
+          "label": "Analyze",
+          "event": "on_analyze",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_meal_capture",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_meal_capture",
+      "navigation": {
+        "on_back": "home",
+        "on_analyze_success": "meal_confirm"
+      }
+    },
+    {
+      "screen_id": "meal_confirm",
+      "title": "Confirm & Save",
+      "props": {
+        "layout": "detail",
+        "header": "Confirm Nutrition",
+        "sections": [
+          {
+            "id": "meal_meta",
+            "title": "Meal Details",
+            "fields": [
+              { "name": "meal_type", "type": "text" },
+              { "name": "consumed_at", "type": "text" }
+            ]
+          },
+          {
+            "id": "nutrition",
+            "title": "Estimated Nutrition",
+            "fields": [
+              { "name": "food_name", "type": "text" },
+              { "name": "serving_notes", "type": "text" },
+              { "name": "calories_kcal", "type": "number" },
+              { "name": "protein_g", "type": "number" },
+              { "name": "carbs_g", "type": "number" },
+              { "name": "fat_g", "type": "number" },
+              { "name": "fiber_g", "type": "number" },
+              { "name": "sugar_g", "type": "number" },
+              { "name": "sodium_mg", "type": "number" }
+            ]
+          },
+          {
+            "id": "confidence",
+            "title": "Confidence",
+            "fields": [
+              { "name": "confidence", "type": "number" },
+              { "name": "warnings", "type": "list" }
+            ]
+          }
+        ],
+        "actions": [
+          { "id": "edit", "label": "Edit Values", "event": "on_edit" },
+          {
+            "id": "save",
+            "label": "Save Meal",
+            "event": "on_save",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_edit", "type": "action" },
+        { "name": "on_save", "type": "action" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Edit Values",
+          "event": "on_edit",
+          "calls_agent": false
+        },
+        {
+          "id": "save",
+          "label": "Save Meal",
+          "event": "on_save",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_meal_confirm",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_meal_confirm",
+      "navigation": {
+        "on_back": "meal_capture",
+        "on_save_success": "meal_history"
+      }
+    },
+    {
+      "screen_id": "meal_history",
+      "title": "Meal History",
+      "props": {
+        "layout": "list",
+        "header": "Meal History",
+        "list_item": {
+          "title_field": "food_name",
+          "subtitle_fields": ["consumed_at", "meal_type"],
+          "right_fields": ["calories_kcal"]
+        },
+        "filters": [
+          {
+            "name": "date_range",
+            "type": "select",
+            "options": ["today", "7d", "30d"]
+          }
+        ],
+        "actions": [
+          {
+            "id": "refresh",
+            "label": "Refresh",
+            "event": "on_refresh",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_refresh", "type": "action" },
+        { "name": "on_select:meal", "type": "select" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "refresh",
+          "label": "Refresh",
+          "event": "on_refresh",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_meal_history",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_meal_history",
+      "navigation": {
+        "on_back": "home"
+      }
+    },
+    {
+      "screen_id": "weekly_report",
+      "title": "Weekly Report",
+      "props": {
+        "layout": "detail",
+        "header": "Weekly Report",
+        "fields": [
+          { "name": "week_start", "type": "date", "required": true },
+          { "name": "week_end", "type": "date", "required": true }
+        ],
+        "sections": [
+          {
+            "id": "totals",
+            "title": "Totals",
+            "fields": [
+              { "name": "total_calories_kcal", "type": "number" },
+              { "name": "avg_daily_calories_kcal", "type": "number" },
+              { "name": "total_protein_g", "type": "number" },
+              { "name": "total_carbs_g", "type": "number" },
+              { "name": "total_fat_g", "type": "number" }
+            ]
+          },
+          {
+            "id": "highlights",
+            "title": "Highlights",
+            "fields": [
+              { "name": "best_day", "type": "text" },
+              { "name": "needs_attention", "type": "list" }
+            ]
+          },
+          {
+            "id": "daily_breakdown",
+            "title": "Daily Breakdown",
+            "fields": [{ "name": "days", "type": "list" }]
+          }
+        ],
+        "actions": [
+          {
+            "id": "generate",
+            "label": "Generate Report",
+            "event": "on_generate",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_generate", "type": "action" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "generate",
+          "label": "Generate Report",
+          "event": "on_generate",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_weekly_report",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_weekly_report",
+      "navigation": {
+        "on_back": "home"
+      }
+    },
+    {
+      "screen_id": "nutrition_advice",
+      "title": "Nutrition Advice",
+      "props": {
+        "layout": "chat",
+        "header": "Nutrition Advice",
+        "quick_prompts": [
+          "How can I improve my protein intake this week?",
+          "Suggest 3 healthier dinner ideas based on my logs.",
+          "What should I focus on to reduce sugar?"
+        ],
+        "composer": {
+          "placeholder": "Ask about your nutrition…",
+          "send_event": "on_submit"
+        },
+        "actions": [
+          {
+            "id": "get_advice",
+            "label": "Get Advice",
+            "event": "on_submit",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_submit", "type": "action" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "get_advice",
+          "label": "Get Advice",
+          "event": "on_submit",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_nutrition_advice",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_nutrition_advice",
+      "navigation": {
+        "on_back": "home"
+      }
+    }
+  ],
+  "codegen_prompts": [
+    {
+      "codegen_id": "codegen_home",
+      "screen_id": "home",
+      "tsx_file": "scr_home.tsx",
+      "prompt": "Generate ONE React Native (React Native Web compatible) TSX file named scr_home.tsx.\n\nContext:\n- This is the Dashboard screen for the app \"Count My Calories\".\n- Props available: manifest, screen, nav, api, device, emit.\n- Do NOT set up navigation libraries. Use nav.go(targetScreenId, params?).\n- Use functional components + TypeScript.\n\nUI requirements (deterministic):\n1) Header: show screen.title and a small subtitle from screen.props.subheader.\n2) Render cards from screen.props.cards in a vertical list.\n   - Each card shows label text.\n   - On press: call emit.emit(card.event, { card_id: card.id }) then nav.go(screen.navigation[card.event]).\n3) Provide a small \"Recent Summary\" block (no agent call) with placeholder text \"Log meals to see trends\".\n\nEvents:\n- Emit exactly the card event name (e.g., \"on_card_click:log_meal\").\n\nLoading/error:\n- No API calls here, but include an error boundary-like local try/catch around navigation calls and show a small error Text if something fails.\n\nTestIDs:\n- Each card Pressable must include testID={`card_${card.id}`}\n\nButtons/Inputs:\n- Only card pressables.\n\nReturn:\n- Export default component HomeScreen.\n"
+    },
+    {
+      "codegen_id": "codegen_meal_capture",
+      "screen_id": "meal_capture",
+      "tsx_file": "scr_meal_capture.tsx",
+      "prompt": "Generate ONE React Native (React Native Web compatible) TSX file named scr_meal_capture.tsx.\n\nContext:\n- This screen lets the user pick a meal photo (base64) and request AI nutrition estimation.\n- Props available: manifest, screen, nav, api, device, emit.\n- Use device.pickImageBase64() for image selection.\n- For analysis, call api.call(\"/agent/agent_meal_capture\", payload).\n- On success, navigate to the confirm screen using nav.go(\"meal_confirm\", params).\n\nDeterministic UI:\n1) Header with screen.title.\n2) Inputs shown (controlled state):\n   - meal_type (select) with options from screen.props.fields where name==\"meal_type\".\n   - consumed_at (text input representing ISO string; default to new Date().toISOString()).\n3) Primary buttons:\n   - \"Pick Meal Photo\" (testID=\"btn_pick_photo\"): onPress -> pick image base64, store in state, show preview area.\n   - \"Analyze\" (testID=\"btn_analyze\"): disabled until image selected.\n4) Image preview:\n   - If base64 exists, show a simple preview placeholder box with text \"Image selected\" and length of base64 string.\n\nBehavior:\n- onPress Pick:\n  - setLoadingPick true while picking.\n  - device.pickImageBase64() -> setImageBase64.\n  - emit.emit(\"on_pick_photo\", { has_image: true }).\n- onPress Analyze:\n  - emit.emit(\"on_analyze\", { meal_type, consumed_at }).\n  - call api.call(\"/agent/agent_meal_capture\", { image_base64, meal_type, consumed_at }).\n  - handle loading + error.\n  - On success:\n    - emit.emit(\"on_analyze_success\", { meal_type, consumed_at }).\n    - nav.go(\"meal_confirm\", { draft: result, image_base64, meal_type, consumed_at }).\n\nLoading/error:\n- Show ActivityIndicator when loadingPick or loadingAnalyze.\n- Show error Text with testID=\"txt_error\".\n\nButtons:\n- Include a Back button (testID=\"btn_back\") calling emit.emit(\"on_back\") then nav.go(\"home\").\n\nReturn:\n- Export default component MealCaptureScreen.\n"
+    },
+    {
+      "codegen_id": "codegen_meal_confirm",
+      "screen_id": "meal_confirm",
+      "tsx_file": "scr_meal_confirm.tsx",
+      "prompt": "Generate ONE React Native (React Native Web compatible) TSX file named scr_meal_confirm.tsx.\n\nContext:\n- This screen confirms/edits estimated nutrition values and saves to DB.\n- Props available: manifest, screen, nav, api, device, emit.\n- Assume the runtime passes params via (screen as any).params or similar; implement a safe getter:\n  - const params = (screen as any).params ?? {};\n  - params.draft contains estimated nutrition.\n  - params.image_base64, params.meal_type, params.consumed_at may exist.\n- Save call: api.call(\"/agent/agent_meal_confirm\", payload).\n\nDeterministic UI:\n1) Header with screen.title.\n2) Show a small \"Photo\" section:\n   - If image_base64 exists show a placeholder \"Photo attached\".\n3) Editable inputs shown (controlled state) initialized from params.draft:\n   - food_name (text)\n   - serving_notes (text)\n   - calories_kcal (number)\n   - protein_g (number)\n   - carbs_g (number)\n   - fat_g (number)\n   - fiber_g (number)\n   - sugar_g (number)\n   - sodium_mg (number)\n   - meal_type (read-only text)\n   - consumed_at (read-only text)\n4) Buttons:\n   - \"Save Meal\" primary (testID=\"btn_save_meal\")\n   - \"Back\" (testID=\"btn_back\")\n\nBehavior:\n- Save button onPress:\n  - emit.emit(\"on_save\", { meal_type, consumed_at }).\n  - call api.call(\"/agent/agent_meal_confirm\", {\n      meal_type,\n      consumed_at,\n      image_base64,\n      food_name,\n      serving_notes,\n      calories_kcal,\n      protein_g,\n      carbs_g,\n      fat_g,\n      fiber_g,\n      sugar_g,\n      sodium_mg,\n      confidence: params.draft?.confidence ?? null,\n      warnings: params.draft?.warnings ?? []\n    })\n  - On success:\n    - emit.emit(\"on_save_success\", { meal_id: result.meal_id })\n    - nav.go(\"meal_history\", { highlight_meal_id: result.meal_id })\n\nLoading/error:\n- Show ActivityIndicator while saving.\n- Show error Text testID=\"txt_error\".\n\nTestIDs for inputs:\n- txt_food_name, txt_serving_notes, num_calories_kcal, num_protein_g, num_carbs_g, num_fat_g, num_fiber_g, num_sugar_g, num_sodium_mg\n\nReturn:\n- Export default component MealConfirmScreen.\n"
+    },
+    {
+      "codegen_id": "codegen_meal_history",
+      "screen_id": "meal_history",
+      "tsx_file": "scr_meal_history.tsx",
+      "prompt": "Generate ONE React Native (React Native Web compatible) TSX file named scr_meal_history.tsx.\n\nContext:\n- List saved meal entries from DB.\n- Props available: manifest, screen, nav, api, device, emit.\n- Data source: api.call(\"/agent/agent_meal_history\", payload)\n\nDeterministic UI:\n1) Header with screen.title.\n2) Filter control:\n   - date_range select with options [\"today\",\"7d\",\"30d\"] default \"7d\".\n3) Button:\n   - \"Refresh\" (testID=\"btn_refresh\") triggers fetch.\n4) List:\n   - FlatList rendering meals with:\n     - Title: food_name\n     - Subtitle: consumed_at + \" • \" + meal_type\n     - Right: calories_kcal + \" kcal\"\n   - On press list item:\n     - emit.emit(\"on_select:meal\", { meal_id })\n     - For v1, do NOT navigate (keep minimal), just show a small detail panel below the list for the selected meal.\n5) Selected meal detail panel:\n   - Show calories and macros.\n\nBehavior:\n- On initial mount, auto-fetch.\n- Fetch payload: { date_range }\n- Call api.call(\"/agent/agent_meal_history\", { date_range })\n\nLoading/error:\n- ActivityIndicator while loading.\n- Error Text testID=\"txt_error\".\n\nBack:\n- Back button (testID=\"btn_back\") -> emit.emit(\"on_back\") then nav.go(\"home\").\n\nTestIDs:\n- picker_date_range\n- list_meals\n\nReturn:\n- Export default component MealHistoryScreen.\n"
+    },
+    {
+      "codegen_id": "codegen_weekly_report",
+      "screen_id": "weekly_report",
+      "tsx_file": "scr_weekly_report.tsx",
+      "prompt": "Generate ONE React Native (React Native Web compatible) TSX file named scr_weekly_report.tsx.\n\nContext:\n- Generate a weekly report based on logged meals.\n- Props available: manifest, screen, nav, api, device, emit.\n- Data source: api.call(\"/agent/agent_weekly_report\", payload)\n\nDeterministic UI:\n1) Header with screen.title.\n2) Inputs:\n   - week_start (text input ISO date YYYY-MM-DD), default to last 7 days start.\n   - week_end (text input ISO date YYYY-MM-DD), default to today.\n3) Button:\n   - \"Generate Report\" primary (testID=\"btn_generate_report\").\n4) Output sections (read-only):\n   - Totals: total_calories_kcal, avg_daily_calories_kcal, total_protein_g, total_carbs_g, total_fat_g\n   - Highlights: best_day, needs_attention (render as bullet list)\n   - Daily breakdown: render a simple list of days with calories and macros.\n\nBehavior:\n- On press Generate:\n  - emit.emit(\"on_generate\", { week_start, week_end })\n  - api.call(\"/agent/agent_weekly_report\", { week_start, week_end })\n\nLoading/error:\n- ActivityIndicator while loading.\n- Error Text testID=\"txt_error\".\n\nBack:\n- Back button (testID=\"btn_back\") -> emit.emit(\"on_back\") then nav.go(\"home\").\n\nTestIDs:\n- txt_week_start\n- txt_week_end\n\nReturn:\n- Export default component WeeklyReportScreen.\n"
+    },
+    {
+      "codegen_id": "codegen_nutrition_advice",
+      "screen_id": "nutrition_advice",
+      "tsx_file": "scr_nutrition_advice.tsx",
+      "prompt": "Generate ONE React Native (React Native Web compatible) TSX file named scr_nutrition_advice.tsx.\n\nContext:\n- Chat-style nutrition advice based on user meal logs.\n- Props available: manifest, screen, nav, api, device, emit.\n- Use api.call(\"/agent/agent_nutrition_advice\", payload)\n\nDeterministic message schema:\n- type ChatMessage = { id: string; role: \"user\" | \"assistant\"; text: string; created_at: string };\n\nDeterministic UI:\n1) Header with screen.title.\n2) Quick prompts as buttons from screen.props.quick_prompts:\n   - On press: set input to that prompt.\n3) Message list:\n   - FlatList of messages; render role label and bubble text.\n4) Composer:\n   - TextInput with placeholder from screen.props.composer.placeholder (testID=\"txt_chat_input\")\n   - Send button (testID=\"btn_send\")\n\nBehavior:\n- On send:\n  - Append user message locally.\n  - emit.emit(\"on_submit\", { text })\n  - Call api.call(\"/agent/agent_nutrition_advice\", {\n      text,\n      context_window_days: 14\n    })\n  - Append assistant message from result.advice_text.\n\nLoading/error:\n- While waiting, disable send and show ActivityIndicator.\n- Error Text testID=\"txt_error\".\n\nBack:\n- Back button (testID=\"btn_back\") -> emit.emit(\"on_back\") then nav.go(\"home\").\n\nReturn:\n- Export default component NutritionAdviceScreen.\n"
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "agent_meal_capture",
+      "agent_template": "action_tool_caller",
+      "goal": "Given a meal photo (base64) and meal metadata, estimate calories, macros, and key nutrients with confidence and warnings, returning a structured draft for user confirmation.",
+      "tone": "professional",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["external.api_call", "db.upsert_record"],
+      "responsibilities": [
+        "Analyze meal image using an external AI vision/nutrition endpoint.",
+        "Produce a deterministic draft nutrition object with explicit fields.",
+        "Include confidence and warnings if uncertain (portion size, unclear items).",
+        "Do not write the final meal entry until user confirms on the next screen."
+      ]
+    },
+    {
+      "agent_id": "agent_meal_confirm",
+      "agent_template": "write_to_db",
+      "goal": "Validate and persist a confirmed meal nutrition entry to the database and return the saved record id.",
+      "tone": "professional",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["db.upsert_record", "db.query"],
+      "responsibilities": [
+        "Validate required fields and numeric ranges before writing.",
+        "Upsert a MealEntry record (create new by default).",
+        "Return meal_id and a normalized record summary."
+      ]
+    },
+    {
+      "agent_id": "agent_meal_history",
+      "agent_template": "read_from_db",
+      "goal": "Fetch a list of saved meals for a selected date range, sorted by most recent first.",
+      "tone": "concise",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["db.query"],
+      "responsibilities": [
+        "Query MealEntry records for the requested date range.",
+        "Return a compact list optimized for list rendering."
+      ]
+    },
+    {
+      "agent_id": "agent_weekly_report",
+      "agent_template": "read_from_db",
+      "goal": "Generate a weekly nutrition summary (totals, averages, highlights, daily breakdown) from logged meals between week_start and week_end.",
+      "tone": "professional",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["db.query"],
+      "responsibilities": [
+        "Query MealEntry records for the requested date interval.",
+        "Compute totals and averages for calories and macros.",
+        "Return a daily breakdown and highlight areas needing attention."
+      ]
+    },
+    {
+      "agent_id": "agent_nutrition_advice",
+      "agent_template": "narrative",
+      "goal": "Provide actionable nutrition advice grounded in the user's recent meal logs and the user's question, avoiding medical claims and using practical suggestions.",
+      "tone": "friendly",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["db.query", "db.upsert_record"],
+      "responsibilities": [
+        "Query recent MealEntry records (default last 14 days) to ground advice.",
+        "Answer the user's question with concise, actionable steps.",
+        "Call out uncertainty (missing logs, unknown portions) and suggest improvements."
+      ]
+    }
+  ],
+  "api_contracts": {
+    "agent_meal_capture": {
+      "returns": {
+        "draft": {
+          "food_name": "string",
+          "serving_notes": "string",
+          "calories_kcal": "number",
+          "protein_g": "number",
+          "carbs_g": "number",
+          "fat_g": "number",
+          "fiber_g": "number",
+          "sugar_g": "number",
+          "sodium_mg": "number",
+          "confidence": "number",
+          "warnings": "string[]"
+        }
+      },
+      "errors": { "message": "string" }
+    },
+    "agent_meal_confirm": {
+      "returns": {
+        "meal_id": "string",
+        "record": {
+          "meal_id": "string",
+          "meal_type": "string",
+          "consumed_at": "string",
+          "food_name": "string",
+          "calories_kcal": "number",
+          "protein_g": "number",
+          "carbs_g": "number",
+          "fat_g": "number"
+        }
+      },
+      "errors": { "message": "string" }
+    },
+    "agent_meal_history": {
+      "returns": {
+        "meals": [
+          {
+            "meal_id": "string",
+            "consumed_at": "string",
+            "meal_type": "string",
+            "food_name": "string",
+            "calories_kcal": "number",
+            "protein_g": "number",
+            "carbs_g": "number",
+            "fat_g": "number"
+          }
+        ]
+      },
+      "errors": { "message": "string" }
+    },
+    "agent_weekly_report": {
+      "returns": {
+        "week_start": "string",
+        "week_end": "string",
+        "total_calories_kcal": "number",
+        "avg_daily_calories_kcal": "number",
+        "total_protein_g": "number",
+        "total_carbs_g": "number",
+        "total_fat_g": "number",
+        "best_day": "string",
+        "needs_attention": "string[]",
+        "days": [
+          {
+            "date": "string",
+            "calories_kcal": "number",
+            "protein_g": "number",
+            "carbs_g": "number",
+            "fat_g": "number"
+          }
+        ]
+      },
+      "errors": { "message": "string" }
+    },
+    "agent_nutrition_advice": {
+      "returns": {
+        "advice_text": "string",
+        "key_points": "string[]",
+        "disclaimer": "string"
+      },
+      "errors": { "message": "string" }
+    }
+  },
+  "schemas": [
+    {
+      "schema_id": "schema_meal_entry",
+      "entity": "meal_entry",
+      "fields": [
+        {
+          "name": "meal_id",
+          "type": "string",
+          "required": true,
+          "ui": {
+            "label": "Meal ID",
+            "placeholder": "auto",
+            "keyboard": "default"
+          },
+          "validation": {}
+        },
+        {
+          "name": "meal_type",
+          "type": "string",
+          "required": true,
+          "ui": {
+            "label": "Meal Type",
+            "placeholder": "breakfast/lunch/dinner/snack",
+            "keyboard": "default"
+          },
+          "validation": { "enum": ["breakfast", "lunch", "dinner", "snack"] }
+        },
+        {
+          "name": "consumed_at",
+          "type": "string",
+          "required": true,
+          "ui": {
+            "label": "Consumed At (ISO)",
+            "placeholder": "2026-02-24T12:34:56.000Z",
+            "keyboard": "default"
+          },
+          "validation": { "format": "iso_datetime" }
+        },
+        {
+          "name": "image_base64",
+          "type": "string",
+          "required": true,
+          "ui": {
+            "label": "Meal Photo (base64)",
+            "placeholder": "base64...",
+            "keyboard": "default"
+          },
+          "validation": { "min_len": 100 }
+        },
+        {
+          "name": "food_name",
+          "type": "string",
+          "required": true,
+          "ui": {
+            "label": "Food Name",
+            "placeholder": "e.g., Chicken salad",
+            "keyboard": "default"
+          },
+          "validation": { "min_len": 2 }
+        },
+        {
+          "name": "serving_notes",
+          "type": "string",
+          "required": false,
+          "ui": {
+            "label": "Serving Notes",
+            "placeholder": "e.g., 1 bowl, extra dressing",
+            "keyboard": "default"
+          },
+          "validation": {}
+        },
+        {
+          "name": "calories_kcal",
+          "type": "number",
+          "required": true,
+          "ui": {
+            "label": "Calories (kcal)",
+            "placeholder": "0",
+            "keyboard": "numeric"
+          },
+          "validation": { "min": 0, "max": 5000 }
+        },
+        {
+          "name": "protein_g",
+          "type": "number",
+          "required": true,
+          "ui": {
+            "label": "Protein (g)",
+            "placeholder": "0",
+            "keyboard": "numeric"
+          },
+          "validation": { "min": 0, "max": 400 }
+        },
+        {
+          "name": "carbs_g",
+          "type": "number",
+          "required": true,
+          "ui": {
+            "label": "Carbs (g)",
+            "placeholder": "0",
+            "keyboard": "numeric"
+          },
+          "validation": { "min": 0, "max": 600 }
+        },
+        {
+          "name": "fat_g",
+          "type": "number",
+          "required": true,
+          "ui": {
+            "label": "Fat (g)",
+            "placeholder": "0",
+            "keyboard": "numeric"
+          },
+          "validation": { "min": 0, "max": 300 }
+        },
+        {
+          "name": "fiber_g",
+          "type": "number",
+          "required": false,
+          "ui": {
+            "label": "Fiber (g)",
+            "placeholder": "0",
+            "keyboard": "numeric"
+          },
+          "validation": { "min": 0, "max": 200 }
+        },
+        {
+          "name": "sugar_g",
+          "type": "number",
+          "required": false,
+          "ui": {
+            "label": "Sugar (g)",
+            "placeholder": "0",
+            "keyboard": "numeric"
+          },
+          "validation": { "min": 0, "max": 300 }
+        },
+        {
+          "name": "sodium_mg",
+          "type": "number",
+          "required": false,
+          "ui": {
+            "label": "Sodium (mg)",
+            "placeholder": "0",
+            "keyboard": "numeric"
+          },
+          "validation": { "min": 0, "max": 20000 }
+        },
+        {
+          "name": "confidence",
+          "type": "number",
+          "required": false,
+          "ui": {
+            "label": "Confidence",
+            "placeholder": "0.0 - 1.0",
+            "keyboard": "numeric"
+          },
+          "validation": { "min": 0, "max": 1 }
+        },
+        {
+          "name": "warnings",
+          "type": "string[]",
+          "required": false,
+          "ui": {
+            "label": "Warnings",
+            "placeholder": "[]",
+            "keyboard": "default"
+          },
+          "validation": {}
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,460 @@
+{
+  "manifest_version": "1.0.0",
+  "min_shell_version": "1.0.0",
+  "runtime_contract": {
+    "services": {
+      "nav": [
+        "go(targetScreenId: string, params?: any)",
+        "back()",
+        "resolve(eventName: string)"
+      ],
+      "api": ["call(route: string, payload?: any): Promise<any>"],
+      "device": ["pickImageBase64(): Promise<string>"],
+      "emit": ["emit(eventName: string, payload?: any): void"]
+    },
+    "screen_component_props": [
+      "manifest",
+      "screen",
+      "nav",
+      "api",
+      "device",
+      "emit"
+    ],
+    "web_compat": true
+  },
+  "app": {
+    "app_id": "count-my-calories",
+    "name": "Count My Calories",
+    "theme": {
+      "brand_name": "Count My Calories",
+      "primary_color": "#2F80ED"
+    }
+  },
+  "screens": [
+    {
+      "screen_id": "home",
+      "title": "Dashboard",
+      "props": {
+        "layout": "cards",
+        "header": "Count My Calories",
+        "subheader": "Log meals, view reports, and get advice.",
+        "cards": [
+          {
+            "id": "log_meal",
+            "label": "Log a Meal (Photo)",
+            "event": "on_card_click:log_meal"
+          },
+          {
+            "id": "history",
+            "label": "Meal History",
+            "event": "on_card_click:history"
+          },
+          {
+            "id": "weekly_report",
+            "label": "Weekly Report",
+            "event": "on_card_click:weekly_report"
+          },
+          {
+            "id": "advice",
+            "label": "Nutrition Advice",
+            "event": "on_card_click:advice"
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_card_click:log_meal", "type": "nav" },
+        { "name": "on_card_click:history", "type": "nav" },
+        { "name": "on_card_click:weekly_report", "type": "nav" },
+        { "name": "on_card_click:advice", "type": "nav" }
+      ],
+      "actions": [],
+      "agent_id": null,
+      "schema_id": null,
+      "codegen_id": "codegen_home",
+      "navigation": {
+        "on_card_click:log_meal": "meal_capture",
+        "on_card_click:history": "meal_history",
+        "on_card_click:weekly_report": "weekly_report",
+        "on_card_click:advice": "nutrition_advice"
+      }
+    },
+    {
+      "screen_id": "meal_capture",
+      "title": "Log Meal",
+      "props": {
+        "layout": "camera",
+        "header": "Log a Meal",
+        "instructions": [
+          "Tap 'Pick Meal Photo' to choose an image.",
+          "Optionally pick meal type and time.",
+          "Tap 'Analyze' to estimate calories and macros."
+        ],
+        "fields": [
+          {
+            "name": "meal_type",
+            "type": "select",
+            "required": true,
+            "options": ["breakfast", "lunch", "dinner", "snack"]
+          },
+          { "name": "consumed_at", "type": "datetime", "required": true }
+        ],
+        "actions": [
+          {
+            "id": "pick_photo",
+            "label": "Pick Meal Photo",
+            "event": "on_pick_photo"
+          },
+          {
+            "id": "analyze",
+            "label": "Analyze",
+            "event": "on_analyze",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_pick_photo", "type": "action" },
+        { "name": "on_analyze", "type": "action" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "pick_photo",
+          "label": "Pick Meal Photo",
+          "event": "on_pick_photo",
+          "calls_agent": false
+        },
+        {
+          "id": "analyze",
+          "label": "Analyze",
+          "event": "on_analyze",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_meal_capture",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_meal_capture",
+      "navigation": {
+        "on_back": "home",
+        "on_analyze_success": "meal_confirm"
+      }
+    },
+    {
+      "screen_id": "meal_confirm",
+      "title": "Confirm & Save",
+      "props": {
+        "layout": "detail",
+        "header": "Confirm Nutrition",
+        "sections": [
+          {
+            "id": "meal_meta",
+            "title": "Meal Details",
+            "fields": [
+              { "name": "meal_type", "type": "text" },
+              { "name": "consumed_at", "type": "text" }
+            ]
+          },
+          {
+            "id": "nutrition",
+            "title": "Estimated Nutrition",
+            "fields": [
+              { "name": "food_name", "type": "text" },
+              { "name": "serving_notes", "type": "text" },
+              { "name": "calories_kcal", "type": "number" },
+              { "name": "protein_g", "type": "number" },
+              { "name": "carbs_g", "type": "number" },
+              { "name": "fat_g", "type": "number" },
+              { "name": "fiber_g", "type": "number" },
+              { "name": "sugar_g", "type": "number" },
+              { "name": "sodium_mg", "type": "number" }
+            ]
+          },
+          {
+            "id": "confidence",
+            "title": "Confidence",
+            "fields": [
+              { "name": "confidence", "type": "number" },
+              { "name": "warnings", "type": "list" }
+            ]
+          }
+        ],
+        "actions": [
+          { "id": "edit", "label": "Edit Values", "event": "on_edit" },
+          {
+            "id": "save",
+            "label": "Save Meal",
+            "event": "on_save",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_edit", "type": "action" },
+        { "name": "on_save", "type": "action" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Edit Values",
+          "event": "on_edit",
+          "calls_agent": false
+        },
+        {
+          "id": "save",
+          "label": "Save Meal",
+          "event": "on_save",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_meal_confirm",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_meal_confirm",
+      "navigation": {
+        "on_back": "meal_capture",
+        "on_save_success": "meal_history"
+      }
+    },
+    {
+      "screen_id": "meal_history",
+      "title": "Meal History",
+      "props": {
+        "layout": "list",
+        "header": "Meal History",
+        "list_item": {
+          "title_field": "food_name",
+          "subtitle_fields": ["consumed_at", "meal_type"],
+          "right_fields": ["calories_kcal"]
+        },
+        "filters": [
+          {
+            "name": "date_range",
+            "type": "select",
+            "options": ["today", "7d", "30d"]
+          }
+        ],
+        "actions": [
+          {
+            "id": "refresh",
+            "label": "Refresh",
+            "event": "on_refresh",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_refresh", "type": "action" },
+        { "name": "on_select:meal", "type": "select" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "refresh",
+          "label": "Refresh",
+          "event": "on_refresh",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_meal_history",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_meal_history",
+      "navigation": {
+        "on_back": "home"
+      }
+    },
+    {
+      "screen_id": "weekly_report",
+      "title": "Weekly Report",
+      "props": {
+        "layout": "detail",
+        "header": "Weekly Report",
+        "fields": [
+          { "name": "week_start", "type": "date", "required": true },
+          { "name": "week_end", "type": "date", "required": true }
+        ],
+        "sections": [
+          {
+            "id": "totals",
+            "title": "Totals",
+            "fields": [
+              { "name": "total_calories_kcal", "type": "number" },
+              { "name": "avg_daily_calories_kcal", "type": "number" },
+              { "name": "total_protein_g", "type": "number" },
+              { "name": "total_carbs_g", "type": "number" },
+              { "name": "total_fat_g", "type": "number" }
+            ]
+          },
+          {
+            "id": "highlights",
+            "title": "Highlights",
+            "fields": [
+              { "name": "best_day", "type": "text" },
+              { "name": "needs_attention", "type": "list" }
+            ]
+          },
+          {
+            "id": "daily_breakdown",
+            "title": "Daily Breakdown",
+            "fields": [{ "name": "days", "type": "list" }]
+          }
+        ],
+        "actions": [
+          {
+            "id": "generate",
+            "label": "Generate Report",
+            "event": "on_generate",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_generate", "type": "action" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "generate",
+          "label": "Generate Report",
+          "event": "on_generate",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_weekly_report",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_weekly_report",
+      "navigation": {
+        "on_back": "home"
+      }
+    },
+    {
+      "screen_id": "nutrition_advice",
+      "title": "Nutrition Advice",
+      "props": {
+        "layout": "chat",
+        "header": "Nutrition Advice",
+        "quick_prompts": [
+          "How can I improve my protein intake this week?",
+          "Suggest 3 healthier dinner ideas based on my logs.",
+          "What should I focus on to reduce sugar?"
+        ],
+        "composer": {
+          "placeholder": "Ask about your nutrition…",
+          "send_event": "on_submit"
+        },
+        "actions": [
+          {
+            "id": "get_advice",
+            "label": "Get Advice",
+            "event": "on_submit",
+            "calls_agent": true
+          }
+        ]
+      },
+      "events": [
+        { "name": "on_submit", "type": "action" },
+        { "name": "on_back", "type": "nav" }
+      ],
+      "actions": [
+        {
+          "id": "get_advice",
+          "label": "Get Advice",
+          "event": "on_submit",
+          "calls_agent": true
+        }
+      ],
+      "agent_id": "agent_nutrition_advice",
+      "schema_id": "schema_meal_entry",
+      "codegen_id": "codegen_nutrition_advice",
+      "navigation": {
+        "on_back": "home"
+      }
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "agent_meal_capture",
+      "agent_template": "action_tool_caller",
+      "goal": "Given a meal photo (base64) and meal metadata, estimate calories, macros, and key nutrients with confidence and warnings, returning a structured draft for user confirmation.",
+      "tone": "professional",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["external.api_call", "db.upsert_record"],
+      "responsibilities": [
+        "Analyze meal image using an external AI vision/nutrition endpoint.",
+        "Produce a deterministic draft nutrition object with explicit fields.",
+        "Include confidence and warnings if uncertain (portion size, unclear items).",
+        "Do not write the final meal entry until user confirms on the next screen."
+      ]
+    },
+    {
+      "agent_id": "agent_meal_confirm",
+      "agent_template": "write_to_db",
+      "goal": "Validate and persist a confirmed meal nutrition entry to the database and return the saved record id.",
+      "tone": "professional",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["db.upsert_record", "db.query"],
+      "responsibilities": [
+        "Validate required fields and numeric ranges before writing.",
+        "Upsert a MealEntry record (create new by default).",
+        "Return meal_id and a normalized record summary."
+      ]
+    },
+    {
+      "agent_id": "agent_meal_history",
+      "agent_template": "read_from_db",
+      "goal": "Fetch a list of saved meals for a selected date range, sorted by most recent first.",
+      "tone": "concise",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["db.query"],
+      "responsibilities": [
+        "Query MealEntry records for the requested date range.",
+        "Return a compact list optimized for list rendering."
+      ]
+    },
+    {
+      "agent_id": "agent_weekly_report",
+      "agent_template": "read_from_db",
+      "goal": "Generate a weekly nutrition summary (totals, averages, highlights, daily breakdown) from logged meals between week_start and week_end.",
+      "tone": "professional",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["db.query"],
+      "responsibilities": [
+        "Query MealEntry records for the requested date interval.",
+        "Compute totals and averages for calories and macros.",
+        "Return a daily breakdown and highlight areas needing attention."
+      ]
+    },
+    {
+      "agent_id": "agent_nutrition_advice",
+      "agent_template": "narrative",
+      "goal": "Provide actionable nutrition advice grounded in the user's recent meal logs and the user's question, avoiding medical claims and using practical suggestions.",
+      "tone": "friendly",
+      "guardrails": {
+        "validate_before_write": true,
+        "ask_one_at_a_time": true,
+        "confirm_ambiguity": true
+      },
+      "tools": ["db.query", "db.upsert_record"],
+      "responsibilities": [
+        "Query recent MealEntry records (default last 14 days) to ground advice.",
+        "Answer the user's question with concise, actionable steps.",
+        "Call out uncertainty (missing logs, unknown portions) and suggest improvements."
+      ]
+    }
+  ]
+}
